@@ -54,7 +54,7 @@ namespace Client.TcpClient12
                     localDate = DateTime.Now;
 
                     stream = tcpClient.GetStream();
-                    worker1.RunWorkerAsync();
+                    //worker1.RunWorkerAsync();
                 }
                 else
                 {
