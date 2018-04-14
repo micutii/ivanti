@@ -15,3 +15,4 @@ Client/Client/obj/
 Client/Client/bin/Debug/netcoreapp2.0/Client.dll
 Client/Client/bin/
 Client/.vs/
+Server/.vs/Server/v15/Server/sqlite3/storage.ide
