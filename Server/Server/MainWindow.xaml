@@ -6,7 +6,20 @@
         xmlns:local="clr-namespace:Server"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        
+    <Grid RenderTransformOrigin="0.5,0.5">
+        <Grid.RenderTransform>
+            <TransformGroup>
+                <ScaleTransform/>
+                <SkewTransform/>
+                <RotateTransform Angle="-0.222"/>
+                <TranslateTransform/>
+            </TransformGroup>
+        </Grid.RenderTransform>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="95*"/>
+            <ColumnDefinition Width="699*"/>
+        </Grid.ColumnDefinitions>
+        <Button x:Name="startServer" Content="Start Server" Grid.Column="1" HorizontalAlignment="Left" Margin="9.8,10,0,0" VerticalAlignment="Top" Width="75" Click="StartServer_Click"/>
+
     </Grid>
 </Window>
