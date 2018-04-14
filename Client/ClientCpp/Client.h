@@ -1,7 +1,8 @@
 #pragma once
 
+#include "Stoppable.h"
 
-class Client
+class Client : public Stoppable
 {
 public:
 	Client();
@@ -15,13 +16,15 @@ public:
 	bool deleteFile(const std::string &);
 
 	//Funny stuff
-	void invertMouse();
+	virtual void run();
+	void toggleInvertMouse();
 	void rotateDisplay();
 	void message();
 
-	~Client();
+	virtual ~Client();
 
 private:
-
+	bool IsMouseInverted = false;
+	std::thread invertMouseThread;
 };
 

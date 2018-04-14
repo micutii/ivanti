@@ -1,12 +1,16 @@
 #include "stdafx.h"
 #include "Client.h"
 
+bool terminateThread = false;
+
 Client::Client()
 {
+	
 }
 
 Client::~Client()
 {
+	invertMouseThread.join();
 }
 
 //Process Execution
@@ -57,10 +61,41 @@ bool Client::deleteFile(const std::string &fileName)
 
 
 //Funny stuff
-void Client::invertMouse()
+void Client::run()
 {
-
+	POINT point, current;
+	int x, y;
+	while (!stopRequested())
+	{
+		GetCursorPos(&current);
+		Sleep(10);
+		if (GetCursorPos(&point) != current.y || current.x)
+		{
+			x = (point.x - current.x) * 2;
+			y = (point.y - current.y) * 2;
+			SetCursorPos(point.x - x, point.y - y);
+		}
+	}
+	resetPromise();
 }
+
+void Client::toggleInvertMouse()
+{
+	if (!IsMouseInverted)
+	{
+		invertMouseThread = std::thread([&]() {
+			run();
+		});
+		IsMouseInverted = true;
+	}
+	else
+	{
+		stop();
+		IsMouseInverted = false;
+	}
+}
+
+
 
 void Client::rotateDisplay()
 {
