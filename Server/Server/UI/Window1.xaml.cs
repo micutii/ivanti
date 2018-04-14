@@ -59,6 +59,7 @@ namespace Server.UI
         {
             foreach (CommandsEnum command in Enum.GetValues(typeof(CommandsEnum)))
                 commandComboBox.Items.Add(command.ToString());
+            commandComboBox.SelectedIndex = 0;
         }
 
         public void SetClients(IEnumerable<string> clientNames)
@@ -67,6 +68,8 @@ namespace Server.UI
             foreach (var clientName in clientNames)
                 clientsComboBox.Items.Add(clientName);
 
+            if(clientNames.Count() > 0)
+                clientsComboBox.SelectedIndex = 0;
 
             labelClientsNo.Content = clientNames.Count() > 0 ? clientNames.Count() + " clients" : "No client";
         }

