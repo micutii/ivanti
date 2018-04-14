@@ -19,7 +19,7 @@ namespace Client.TcpClient12
     {
         private Int32 port = 13000;
 
-        private String hostname = "127.0.0.1";
+        private String hostname = "192.168.21.100";
 
         public TcpClient tcpClient;
 
@@ -71,6 +71,11 @@ namespace Client.TcpClient12
         {
             try
             {
+                byte[] msg = System.Text.Encoding.ASCII.GetBytes("My Name");
+                if (stream.CanWrite)
+                {
+                    await stream.WriteAsync(msg, 0, msg.Length);
+                }
                 while (true)
                 {
 
