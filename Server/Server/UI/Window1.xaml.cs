@@ -23,6 +23,8 @@ namespace Server.UI
     {
         public event EventHandler SentPressed;
 
+        public event EventHandler GetFiles;
+
         public Window1()
         {
             InitializeComponent();
@@ -44,12 +46,18 @@ namespace Server.UI
             return clientsComboBox.SelectedIndex;
         }
 
+        public string GetFile()
+        {
+            if (folderTreeList.Items.Count == 0)
+                return string.Empty;
+            return folderTreeList.SelectedValue.ToString();
+        }
+
         public int GetCommandId()
         {
             return commandComboBox.SelectedIndex;
         }
-
-
+        
         public string GetParameters()
         {
             return parametersTextBox.Text;
@@ -68,7 +76,7 @@ namespace Server.UI
             foreach (var clientName in clientNames)
                 clientsComboBox.Items.Add(clientName);
 
-            if(clientNames.Count() > 0)
+            if (clientNames.Count() > 0)
                 clientsComboBox.SelectedIndex = 0;
 
             labelClientsNo.Content = clientNames.Count() > 0 ? clientNames.Count() + " clients" : "No client";
@@ -76,7 +84,11 @@ namespace Server.UI
 
         public void DisplayOutput(string response)
         {
-            outputTextBlock.Text = outputTextBlock.Text + "\n" + response;
+            if (!string.IsNullOrEmpty(response) && !string.IsNullOrEmpty(outputTextBlock.Text))
+                outputTextBlock.Text = outputTextBlock.Text + "\n" + response;
+            else if(!string.IsNullOrEmpty(response) && string.IsNullOrEmpty(outputTextBlock.Text))
+                outputTextBlock.Text = response;
+
         }
 
         private void ComboBox_SelectionChanged_1(object sender, SelectionChangedEventArgs e)
@@ -88,15 +100,26 @@ namespace Server.UI
         {
 
         }
-        private void UpdateList()
+
+        public void UpdateList(string files)
         {
-            folderTreeList.Items.Add("muie");
+            folderTreeList.Items.Add(files);
 
         }
 
         private void folderTreeList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             folderTreeList.Items.Clear();
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            OnSentPressed(EventArgs.Empty);
+        }
+
+        protected virtual void OnGetFiles(EventArgs e)
+        {
+            GetFiles?.Invoke(this, e);
         }
     }
 }

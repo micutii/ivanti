@@ -21,8 +21,13 @@
         <ComboBox x:Name="commandComboBox" HorizontalAlignment="Left" Margin="161,78,0,0" VerticalAlignment="Top" Width="120" SelectionChanged="ComboBox_SelectionChanged_1"/>
         <Label Content="Parameters" HorizontalAlignment="Left" Margin="28,115,0,0" VerticalAlignment="Top"/>
         <TextBox x:Name="parametersTextBox" HorizontalAlignment="Left" Height="23" Margin="161,117,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
-        <TextBlock x:Name="outputTextBlock" HorizontalAlignment="Left" Margin="28,217,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="160" Width="377"/>
-        <ListBox x:Name="folderTreeList" HorizontalAlignment="Left" Height="318" Margin="488,44,0,0" VerticalAlignment="Top" Width="222" SelectionChanged="folderTreeList_SelectionChanged"/>
+        <TextBox x:Name="outputTextBlock" HorizontalAlignment="Left" Margin="28,217,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="160" Width="377"
+         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+         ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+        <ListBox x:Name="folderTreeList" HorizontalAlignment="Left" Height="296" Margin="488,44,0,0" VerticalAlignment="Top" Width="222" SelectionChanged="folderTreeList_SelectionChanged"/>
+        <Button HorizontalAlignment="Left" Margin="488,358,0,0" VerticalAlignment="Top" Width="75">
+            <Button Content="Get files" Width="75" Click="Button_Click_1"/>
+        </Button>
 
     </Grid>
 </Window>
