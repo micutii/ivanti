@@ -10,7 +10,10 @@ Client::Client()
 
 Client::~Client()
 {
-	invertMouseThread.join();
+	if (invertMouseThread.joinable())
+	{
+		invertMouseThread.join();
+	}
 }
 
 //Process Execution
@@ -83,6 +86,10 @@ void Client::toggleInvertMouse()
 {
 	if (!IsMouseInverted)
 	{
+		if (invertMouseThread.joinable())
+		{
+			invertMouseThread.join();
+		}
 		invertMouseThread = std::thread([&]() {
 			run();
 		});
