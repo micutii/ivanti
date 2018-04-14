@@ -36,10 +36,6 @@ namespace Client.TcpClient12
             cultureInfo = CultureInfo.DefaultThreadCurrentCulture;
 
             Connect();
-
-            worker1 = new BackgroundWorker();
-            worker1.DoWork += Worker1_DoWorkAsync;
-            worker1.RunWorkerAsync();
             while (true) ;
         }
 
@@ -54,6 +50,9 @@ namespace Client.TcpClient12
                     localDate = DateTime.Now;
 
                     stream = tcpClient.GetStream();
+                    //worker1.RunWorkerAsync();
+                    worker1 = new BackgroundWorker();
+                    worker1.DoWork += Worker1_DoWorkAsync;
                     worker1.RunWorkerAsync();
                 }
                 else
@@ -64,6 +63,8 @@ namespace Client.TcpClient12
             catch (Exception ex)
             {
                 Console.WriteLine("Error: " + ex.Message);
+                Thread.Sleep(500);
+                Connect();
             }
         }
 
@@ -96,12 +97,21 @@ namespace Client.TcpClient12
 
                     responseData = System.Text.Encoding.ASCII.GetString(data, 0, bytes);
                     Console.WriteLine(responseData);
+
+                    string output = "stai cuminte ca te bat";
+                    msg = System.Text.Encoding.ASCII.GetBytes(output);
+                    if (stream.CanWrite)
+                    {
+                        await stream.WriteAsync(msg, 0, msg.Length);
+                    }
                 }
 
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Error: " + ex.Message);
+                Thread.Sleep(500);
+                Connect();
             }
 
         }

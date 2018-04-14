@@ -29,11 +29,6 @@ namespace Server.UI
             SetCommand();
         }
 
-        public void SetLabel(string content)
-        {
-            label.Content = content;
-        }
-
         private void button_Click(object sender, RoutedEventArgs e)
         {
             OnSentPressed(EventArgs.Empty);
@@ -64,12 +59,24 @@ namespace Server.UI
         {
             foreach (CommandsEnum command in Enum.GetValues(typeof(CommandsEnum)))
                 commandComboBox.Items.Add(command.ToString());
+            commandComboBox.SelectedIndex = 0;
         }
 
         public void SetClients(IEnumerable<string> clientNames)
         {
+            clientsComboBox.Items.Clear();
             foreach (var clientName in clientNames)
                 clientsComboBox.Items.Add(clientName);
+
+            if(clientNames.Count() > 0)
+                clientsComboBox.SelectedIndex = 0;
+
+            labelClientsNo.Content = clientNames.Count() > 0 ? clientNames.Count() + " clients" : "No client";
+        }
+
+        public void DisplayOutput(string response)
+        {
+            outputTextBlock.Text = outputTextBlock.Text + "\n" + response;
         }
 
         private void ComboBox_SelectionChanged_1(object sender, SelectionChangedEventArgs e)
@@ -81,5 +88,6 @@ namespace Server.UI
         {
 
         }
+
     }
 }
