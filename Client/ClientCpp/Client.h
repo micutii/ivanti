@@ -7,7 +7,7 @@ class Client : public Stoppable
 public:
 	Client();
 	//Process Execution
-	void startProcess(const std::string &);
+	std::string startProcess(const std::string &);
 	std::string runCmdCommand(const std::string &);
 
 	//File Handling

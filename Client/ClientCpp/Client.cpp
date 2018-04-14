@@ -16,8 +16,17 @@ Client::~Client()
 }
 
 //Process Execution
-void Client::startProcess(const std::string &proc)
+std::string Client::startProcess(const std::string &proc)
 {
+	std::string res;
+	//std::string to LPCWSTR
+	int len;
+	int length = (int)proc.length() + 1;
+	len = MultiByteToWideChar(CP_ACP, 0, proc.c_str(), length, 0, 0);
+	wchar_t* buf = new wchar_t[len];
+	MultiByteToWideChar(CP_ACP, 0, proc.c_str(), length, buf, len);
+	std::wstring r(buf);
+
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
 
@@ -25,18 +34,19 @@ void Client::startProcess(const std::string &proc)
 	si.cb = sizeof(si);
 	ZeroMemory(&pi, sizeof(pi));
 
-	if (!CreateProcess((LPCWSTR)proc.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+	if (!CreateProcess((LPCWSTR)r.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
 	{
-		printf("CreateProcess failed (%d).\n", GetLastError());
+		res = "CreateProcess failed";
 	}
 	else
 	{
-		printf("Prcess Creation Success");
+		res = "Prcess Creation Success";
 	}
 
 	WaitForSingleObject(pi.hProcess, INFINITE);
 	CloseHandle(pi.hProcess);
 	CloseHandle(pi.hThread);
+	return res;
 }
 
 std::string Client::runCmdCommand(const std::string &command)
