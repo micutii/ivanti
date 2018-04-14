@@ -16,6 +16,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.ComponentModel;
+using Server.TCP;
 
 namespace Server
 {
@@ -24,29 +25,33 @@ namespace Server
     /// </summary>
     public partial class MainWindow : Window
     {
-        private StreamReader STR;
-        private StreamWriter STW;
-        private TcpClient client;
-        private BackgroundWorker backgroundWorker;
-        
+        //private StreamReader STR;
+        //private StreamWriter STW;
+        //private TcpClient client;
+
         public MainWindow()
         {
-            InitializeComponent();
+            //InitializeComponent();
 
-            IPAddress[] localIP = Dns.GetHostAddresses(Dns.GetHostName());
-            foreach(IPAddress address in localIP)
-            {
-                Console.WriteLine(address.AddressFamily);
-            }
+            //IPAddress[] localIP = Dns.GetHostAddresses(Dns.GetHostName());
+            //foreach(IPAddress address in localIP)
+            //{
+            //    Console.WriteLine(address.AddressFamily);
+            //}
+            this.Hide();
+            TcpServer ts = new TcpServer();
         }
 
         private void StartServer_Click(object sender, RoutedEventArgs e)
         {
-            TcpListener listener = new TcpListener(IPAddress.Any, 100); // 100 - socket port
-            listener.Start();
-            STR = new StreamReader(client.GetStream());
-            STW = new StreamWriter(client.GetStream());
-            STW.AutoFlush = true;
+            //TcpListener listener = new TcpListener(IPAddress.Any, 100); // 100 - socket port
+            //listener.Start();
+            //client = listener.AcceptTcpClient();
+            //STR = new StreamReader(client.GetStream());
+            //STW = new StreamWriter(client.GetStream());
+            //STW.AutoFlush = true;
+
+            //label.Content = "Connected";
         }
     }
 }

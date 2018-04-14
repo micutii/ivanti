@@ -1,4 +1,5 @@
 ﻿using System;
+using Client.TcpClient12;
 
 namespace Client
 {
@@ -7,6 +8,7 @@ namespace Client
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
+            TcpClient1 tc = new TcpClient1();
         }
     }
 }
