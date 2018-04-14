@@ -17,3 +17,5 @@ Client/Client/bin/
 Client/.vs/
 Server/.vs/Server/v15/Server/sqlite3/storage.ide
 Server/.vs/Server/v15/.suo
+QClient/.vs/QClient/v15/Browse.VC.db
+QClient/.vs/QClient/v15/.suo
