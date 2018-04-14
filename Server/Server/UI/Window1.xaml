@@ -6,6 +6,11 @@
         xmlns:local="clr-namespace:Server.UI"
         mc:Ignorable="d"
         Title="Window1" Height="450" Width="800">
+    <Window.Resources>
+        <ControlTemplate x:Key="ListBoxControlTemplate1" TargetType="{x:Type ListBox}">
+            <Grid/>
+        </ControlTemplate>
+    </Window.Resources>
     <Grid>
         <Button x:Name="Send_Message" Content="Send" HorizontalAlignment="Left" Margin="28,172,0,0" VerticalAlignment="Top" Width="75" Click="button_Click"/>
         <Label x:Name="labelClientsNo" Content="No client" HorizontalAlignment="Left" Margin="161,18,0,0" VerticalAlignment="Top"/>
@@ -17,6 +22,7 @@
         <Label Content="Parameters" HorizontalAlignment="Left" Margin="28,115,0,0" VerticalAlignment="Top"/>
         <TextBox x:Name="parametersTextBox" HorizontalAlignment="Left" Height="23" Margin="161,117,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
         <TextBlock x:Name="outputTextBlock" HorizontalAlignment="Left" Margin="28,217,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="160" Width="377"/>
+        <ListBox x:Name="folderTreeList" HorizontalAlignment="Left" Height="318" Margin="488,44,0,0" VerticalAlignment="Top" Width="222" SelectionChanged="folderTreeList_SelectionChanged"/>
 
     </Grid>
 </Window>

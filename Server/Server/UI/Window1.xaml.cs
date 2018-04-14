@@ -85,6 +85,15 @@ namespace Server.UI
         {
 
         }
+        private void UpdateList()
+        {
+            folderTreeList.Items.Add("muie");
 
+        }
+
+        private void folderTreeList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            folderTreeList.Items.Clear();
+        }
     }
 }
