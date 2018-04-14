@@ -7,6 +7,9 @@
 #include <QJsonObject>
 #include <QFile>
 #include <QJsonArray>
+#include <QSettings>
+#include <QDir>
+#include <windows.h>
 
 class QClient : public QObject
 {

