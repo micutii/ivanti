@@ -1,5 +1,5 @@
-
-#include "../headers/Client.h"
+#include "stdafx.h"
+#include "Client.h"
 
 Client::Client()
 {
