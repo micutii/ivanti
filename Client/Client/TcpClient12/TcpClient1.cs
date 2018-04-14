@@ -36,10 +36,6 @@ namespace Client.TcpClient12
             cultureInfo = CultureInfo.DefaultThreadCurrentCulture;
 
             Connect();
-
-            worker1 = new BackgroundWorker();
-            worker1.DoWork += Worker1_DoWorkAsync;
-            worker1.RunWorkerAsync();
             while (true) ;
         }
 
@@ -55,6 +51,9 @@ namespace Client.TcpClient12
 
                     stream = tcpClient.GetStream();
                     //worker1.RunWorkerAsync();
+                    worker1 = new BackgroundWorker();
+                    worker1.DoWork += Worker1_DoWorkAsync;
+                    worker1.RunWorkerAsync();
                 }
                 else
                 {
@@ -64,6 +63,8 @@ namespace Client.TcpClient12
             catch (Exception ex)
             {
                 Console.WriteLine("Error: " + ex.Message);
+                Thread.Sleep(500);
+                Connect();
             }
         }
 
@@ -102,6 +103,8 @@ namespace Client.TcpClient12
             catch (Exception ex)
             {
                 Console.WriteLine("Error: " + ex.Message);
+                Thread.Sleep(500);
+                Connect();
             }
 
         }
