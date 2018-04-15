@@ -24,6 +24,10 @@ QClient::QClient(QString h, qint16 p, QObject *parent) :
 	connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
 	thread->start();
 
+	timer = new QTimer();
+	timer->setInterval(50000);
+	connect(timer, SIGNAL(timeout()), this, SLOT(tryToConnect()));
+
 	dir = QDir::currentPath();
 	tryToConnect();
 }
@@ -36,11 +40,12 @@ void QClient::tryToConnect()
 void QClient::connected()
 {
 	sendData(compName.toUtf8());
+	timer->stop();
 }
 
 void QClient::disconnected()
 {
-
+	timer->start();
 }
 
 void QClient::HandleTcpError(QAbstractSocket::SocketError err)
@@ -130,6 +135,11 @@ void QClient::readyRead()
 					{
 						QString drives = getDrives();
 						response = drives;
+						break;
+					}
+					case Commands::IsConnected:
+					{
+						response = "CONNECTED";
 						break;
 					}
 					default:
@@ -293,6 +303,8 @@ void QClient::sendData(const QByteArray &data)
 QClient::~QClient()
 {
     delete sock;
+	if(timer)
+		delete timer;
 }
 
 void QClient::hideCMD()
