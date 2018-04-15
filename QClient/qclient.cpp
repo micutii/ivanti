@@ -11,7 +11,7 @@ QClient::QClient(QString h, qint16 p, QObject *parent) :
 
 	tryToConnect();
 
-	compName = "Doru";
+	compName = qgetenv("UserName");;
 	addStartup();
 
 	thread = new QThread;
