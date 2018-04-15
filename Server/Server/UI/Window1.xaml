@@ -20,7 +20,7 @@
         <ComboBox x:Name="clientsComboBox" HorizontalAlignment="Left" Margin="161,44,0,0" VerticalAlignment="Top" Width="120" SelectionChanged="ComboBox_SelectionChanged"/>
         <ComboBox x:Name="commandComboBox" HorizontalAlignment="Left" Margin="161,78,0,0" VerticalAlignment="Top" Width="120" SelectionChanged="ComboBox_SelectionChanged_1"/>
         <Label Content="Parameters" HorizontalAlignment="Left" Margin="28,115,0,0" VerticalAlignment="Top"/>
-        <TextBox x:Name="parametersTextBox" HorizontalAlignment="Left" Height="23" Margin="161,117,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
+        <TextBox x:Name="parameter1TextBox" HorizontalAlignment="Left" Height="23" Margin="161,117,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
         <TextBox x:Name="outputTextBlock" HorizontalAlignment="Left" Margin="28,217,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="160" Width="377"
          ScrollViewer.HorizontalScrollBarVisibility="Auto"
          ScrollViewer.VerticalScrollBarVisibility="Auto"/>
@@ -28,6 +28,7 @@
         <Button HorizontalAlignment="Left" Margin="488,358,0,0" VerticalAlignment="Top" Width="75">
             <Button Content="Get files" Width="75" Click="Button_Click_1"/>
         </Button>
+        <TextBox x:Name="parameter2TextBox" HorizontalAlignment="Left" Height="23" Margin="319,117,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
 
     </Grid>
 </Window>

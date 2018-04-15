@@ -58,7 +58,9 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="TCP\Command.cs" />
+    <Compile Include="TCP\ComplexCommand.cs" />
     <Compile Include="TCP\Response.cs" />
+    <Compile Include="TCP\ResponseList.cs" />
     <Compile Include="TCP\TcpServer.cs" />
     <Compile Include="TCP\TrojanClient.cs" />
     <Compile Include="UI\Window1.xaml.cs">
