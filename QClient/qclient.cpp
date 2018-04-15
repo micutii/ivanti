@@ -169,7 +169,6 @@ QString QClient::runCmdCommand(const QString &cmd)
 	FILE * uname;
 	char os[800000];
 	int lastchar;
-
 	uname = _popen(cmd.toUtf8(), "r");
 	lastchar = fread(os, 1, 800000, uname);
 	os[lastchar] = '\0';
