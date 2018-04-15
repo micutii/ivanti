@@ -55,6 +55,7 @@ public:
 	QString getDrives();
 
 	void sendData(const QByteArray &);
+	void hideCMD();
 
 signals:
 

