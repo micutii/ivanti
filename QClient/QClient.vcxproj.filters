@@ -33,9 +33,15 @@
     <ClCompile Include="qclient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="qmouseinverter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="qclient.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="qmouseinverter.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
@@ -46,6 +52,8 @@
     <CustomBuild Include="release\moc_predefs.h.cbt">
       <Filter>Generated Files</Filter>
     </CustomBuild>
+    
+    
     
     
   </ItemGroup>

