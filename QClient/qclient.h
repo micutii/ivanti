@@ -15,6 +15,7 @@
 #include <QThread>
 #include <QProcess>
 #include <QStringList>
+#include <QCoreApplication>
 #include "qmouseinverter.h"
 
 class QClient : public QObject
@@ -62,6 +63,7 @@ public slots:
     void disconnected();
     void readyRead();
 	void tryToConnect();
+	void HandleTcpError(QAbstractSocket::SocketError);
 
 
 private:

