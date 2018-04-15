@@ -25,6 +25,8 @@ namespace Server.UI
 
         public event EventHandler GetFiles;
 
+        public event EventHandler RunProcess;
+
         public Window1()
         {
             InitializeComponent();
@@ -50,7 +52,7 @@ namespace Server.UI
         {
             if (folderTreeList.Items.Count == 0)
                 return string.Empty;
-            return folderTreeList.SelectedValue != null? folderTreeList.SelectedValue.ToString() : "";
+            return folderTreeList.SelectedValue != null ? folderTreeList.SelectedValue.ToString() : "";
         }
 
         public int GetCommandId()
@@ -71,7 +73,8 @@ namespace Server.UI
         private void SetCommand()
         {
             foreach (CommandsEnum command in Enum.GetValues(typeof(CommandsEnum)))
-                commandComboBox.Items.Add(command.ToString());
+                if ((int)command < 8)
+                    commandComboBox.Items.Add(command.ToString());
             commandComboBox.SelectedIndex = 0;
         }
 
@@ -103,22 +106,22 @@ namespace Server.UI
 
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            folderTreeList.Items.Clear();
         }
 
         public void UpdateList(List<string> files)
         {
             string currentPath = folderTreeList.SelectedValue.ToString();
-            if(currentPath.EndsWith(".."))
+            if (currentPath.EndsWith(".."))
             {
                 int index = currentPath.LastIndexOf("\\");
                 currentPath = currentPath.Substring(0, index);
                 index = currentPath.LastIndexOf("\\");
-                currentPath = currentPath.Substring(0, index +1);
+                currentPath = currentPath.Substring(0, index + 1);
             }
             else if (currentPath.EndsWith("."))
             {
-                currentPath = currentPath.Substring(0, currentPath.Length -1);
+                currentPath = currentPath.Substring(0, currentPath.Length - 1);
             }
             else
             {
@@ -155,5 +158,16 @@ namespace Server.UI
         {
             GetFiles?.Invoke(this, e);
         }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            OnRunProcess(EventArgs.Empty);
+        }
+
+        protected virtual void OnRunProcess(EventArgs e)
+        {
+            RunProcess?.Invoke(this, e);
+        }
+
     }
 }
