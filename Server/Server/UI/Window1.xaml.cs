@@ -128,9 +128,12 @@ namespace Server.UI
                 currentPath = currentPath + "\\";
             }
             folderTreeList.Items.Clear();
+            if (!files.Contains("."))
+                folderTreeList.Items.Add(currentPath + ".");
+            if (!files.Contains("."))
+                folderTreeList.Items.Add(currentPath + "..");
             foreach (var file in files)
                 folderTreeList.Items.Add(currentPath + file);
-
         }
 
         public void UpdateDrivers(string drivers)

@@ -164,7 +164,7 @@ namespace Server.TCP
 
                 string path = serverGUI.GetFile();
                 Command command;
-                if (string.IsNullOrEmpty(path))
+                if (string.IsNullOrEmpty(path) || path.EndsWith(":\\.."))
                 {
                     command = new Command((int)CommandsEnum.GetDrives, "");
                 }
@@ -175,13 +175,13 @@ namespace Server.TCP
 
                 string output = JsonConvert.SerializeObject(command);
                 SendOnSocket(client, output);
-                if (string.IsNullOrEmpty(path))
+                if (string.IsNullOrEmpty(path) || path.EndsWith(":\\.."))
                 {
                     await ReceiveFromSocket(client, serverGUI.UpdateDrivers);
                 }
                 else
                 {
-                    await ReceiveFromSocket(client, serverGUI.UpdateList);
+                    await ReceiveFilesFromSocket(client, serverGUI.UpdateList);
                 }
 
             }
@@ -231,11 +231,11 @@ namespace Server.TCP
             {
                 serverGUI.DisplayOutput("Client does not respond.");
                 serverGUI.DisplayOutput("Error: " + e.Message);
-                RemoveClient(client);
+                await CheckConnection(client);
             }
         }
 
-        private async Task ReceiveFromSocket(TcpClient client, Action<List<string>> act)
+        private async Task ReceiveFilesFromSocket(TcpClient client, Action<List<string>> act)
         {
             try
             {
@@ -254,7 +254,7 @@ namespace Server.TCP
             {
                 serverGUI.DisplayOutput("Client does not respond.");
                 serverGUI.DisplayOutput("Error: " + e.Message);
-                RemoveClient(client);
+                await CheckConnection(client);
             }
         }
 
@@ -276,6 +276,39 @@ namespace Server.TCP
             {
                 serverGUI.DisplayOutput("Client does not respond.");
                 serverGUI.DisplayOutput("Error: " + e.Message);
+                await CheckConnection(client);
+            }
+        }
+
+        private async Task CheckConnection(TcpClient client)
+        {
+            Command command = new Command(10, "");
+            string output = JsonConvert.SerializeObject(command);
+            SendOnSocket(client, output);
+            await CheckClient(client);
+        }
+
+        private async Task CheckClient(TcpClient client)
+        {
+
+            try
+            {
+                NetworkStream stream = client.GetStream();
+                int i = 0;
+                //var length = new Byte[4];
+                Byte[] bytes = new Byte[500000];
+                if (stream.CanRead)
+                {
+                    i = await stream.ReadAsync(bytes, 0, bytes.Length);
+                }
+                string response = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+
+            }
+            catch (Exception e)
+            {
+                serverGUI.DisplayOutput("Client does not respond.");
+                serverGUI.DisplayOutput("Error: " + e.Message);
+                client.Close();
                 RemoveClient(client);
             }
         }
